@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/Pumpkin-spice-cloud/tiny-app/issues"
   },
-  "homepage": "https://github.com/Pumpkin-spice-cloud/tiny-app#readme"
+  "homepage": "https://github.com/Pumpkin-spice-cloud/tiny-app#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
 }
