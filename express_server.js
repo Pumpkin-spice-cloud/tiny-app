@@ -17,8 +17,26 @@ app.get("/urls/new", (req, res) => {
 });
 app.post("/urls", (req, res) => {
   console.log(req.body);  // Log the POST request body to the console
-  res.send("Ok");         // Respond with 'Ok' (we will replace this)
+  
+  let short = generateRandomString(6);
+  urlDatabase[short] = req.body.longURL;
+  console.log(short, urlDatabase[short]);
+  res.redirect(`/urls/${short}`);
+  // Respond with 'Ok' (we will replace this)
 });
+app.post("/urls", (req, res) => {
+  console.log('ok');
+  res.send('ok');
+});
+
+app.get("/u/:shortURL", (req, res) => {
+
+  const longURL = urlDatabase[req.params.shortURL];
+
+  res.redirect(longURL);
+});
+
+
 
 
 app.set('view engine', 'ejs');
@@ -42,12 +60,12 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-function generateRandomString() {
+function generateRandomString(length) {
 
   let result = '';
   let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let charactersLength = characters.length;
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < length; i++) {
     result += characters.charAt(Math.floor(Math.random() * charactersLength));
   }
   return result;
