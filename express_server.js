@@ -12,20 +12,30 @@ const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.post(`/urls/:shortURL/delete`, (req, res) => {
- 
+
 
   delete urlDatabase[req.params.shortURL];
   res.redirect(`/urls`);
-  console.log(urlDatabase);
-  
+  //console.log(urlDatabase);
+
 });
+app.post(`/urls/:shortURL/toedit`, (req,res) => {
+  res.redirect(`/urls/${req.params.shortURL}`);
+});
+app.post(`/urls/:shortURL/edit`, (req, res) => {
+  let longURL = urlDatabase[req.params.shortURL];
+  delete urlDatabase[req.params.shortURL];
+  urlDatabase[req.params.shortURL] = req.body.longURL;
+  res.redirect('/urls');
+
+})
 
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 app.post("/urls", (req, res) => {
   console.log(req.body);  // Log the POST request body to the console
-  
+
   let short = generateRandomString(6);
   urlDatabase[short] = req.body.longURL;
   console.log(short, urlDatabase[short]);
