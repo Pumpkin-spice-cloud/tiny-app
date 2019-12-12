@@ -3,6 +3,7 @@ const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
 let cookieParser = require('cookie-parser');
+const bcrypt = require('bcrypt');
 const urlDatabase = {
   "b2xVn2": {
     longURL: "http://www.lighthouselabs.ca",
@@ -14,7 +15,7 @@ const urlDatabase = {
   }
 };
 
-const users = { abc: { id: 'abc' } };
+const users = {};
 
 const bodyParser = require("body-parser");
 
@@ -40,10 +41,12 @@ app.post("/register", (req, res) => {
     res.send('Use another email, bud');
   }
   users[userID] = {};
-  users[userID]['id'] = userID;
-  users[userID]['email'] = req.body.email;
+  users[userID].id = userID;
+  users[userID].email = req.body.email;
+  const password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10);
+  users[userID].password = hashedPassword;
 
-  users[userID]['password'] = req.body.password;
   res.cookie('user_id', userID);
   res.redirect('/urls');
 
@@ -63,27 +66,32 @@ app.get("/login", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  const { email, password } = req.body;
+  const password = req.body.password;
+  const email = req.body.email;
+
+
   if (checkDataInUsers(email, 'email')) {
-    if (checkDataInUsers(password, 'password')) {
-      let user_id;
-      for (let user in users) {
-        let temp = users[user];
+    for (let userID in users) {
+      let savedPassword = users[userID].password;
+
+      if (bcrypt.compareSync(password, savedPassword)) {
+
+        let temp = users[userID];
         if (temp.email === email) {
-          user_id = user;
+          let user_id;
+          user_id = userID;
+          res.cookie('user_id', user_id);
+          res.redirect("/urls");
         }
       }
-      res.cookie('user_id', user_id);
-      res.redirect("/urls");
-
-    } else {
-      res.status(403);
-      res.send('wrong password/username bud');
     }
+
   } else {
     res.status(403);
     res.send('wrong password/username bud');
   }
+
+
 
 
 
@@ -119,7 +127,6 @@ app.post(`/urls/:shortURL/edit`, (req, res) => {
     urlDatabase[shortURL].longURL = req.body.longURL;
     urlDatabase[shortURL].userID = id;
 
-    console.log('edit', urlDatabase);
     res.redirect('/urls');
   }
 
@@ -173,7 +180,6 @@ app.get("/urls", (req, res) => {
   let id = req.cookies.user_id;
   let templateVars = { urls: {} };
   templateVars.urls = urlsForUser(id);
-  console.log('urldata', urlDatabase);
   templateVars.user = users[id];
 
   if (id === undefined) {
