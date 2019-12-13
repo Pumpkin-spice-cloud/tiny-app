@@ -17,12 +17,16 @@
   <div class="card text-center">
     <div class="card-header"></div>
     <div class="card-body">
-      <% if (longURL) { %>
+      <% if (user === undefined) { %>
+        <p>You need to login to see urls</p>
+
+      
+      <% } else if (longURL) { %>
 
         <h5 class="card-title">TinyURL for: <%= longURL %></h5>
         <p class="card-text">Short URL: <a href="/u/<%= shortURL %>"><%= shortURL %></a></p>
-        <form method="POST" action="/urls/<%= shortURL %>/edit">
-          <button id="edit" type="submit" class="btn btn-light" style = "position: relative; left: 150px; top: 40px">Submit</button>
+        <form method="POST" action="/urls/<%= shortURL %>">
+          <button id="edit" type="submit" class="btn btn-light" style = "position: relative; left: 150px; top: 40px">Update</button>
           <input class="form-control" type="text" name="longURL" placeholder="http://" style="width: 300px; position: relative; left: 700px">
         </form>  
       <% } else { %> 

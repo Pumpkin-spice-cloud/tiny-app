@@ -21,7 +21,7 @@
     <h3>My URLs</h3>
     <% if (user === undefined) { %>
 
-      <p>You need to sign in to see your urls</p>
+      <p>Error: You need to sign in to see your urls</p>
 
     <% } %>
 
@@ -49,7 +49,7 @@
             </form>
           </td>
           <td>
-              <form method="POST" action="/urls/<%= url %>/toedit">
+              <form method="get" action="/urls/<%= url %>">
                 <button id="edit" type="submit" class="btn btn-light">edit</button>
               </form>
           </td>
