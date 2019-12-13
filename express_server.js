@@ -10,11 +10,13 @@ const urlDatabase = {};
 const sampleUrlDatabase = {
   "b2xVn2": {
     longURL: "http://www.lighthouselabs.ca",
-    userId: ""
+    userId: "",
+    shortURL: "b2xVn2"
   },
   "9sm5xK": {
     longURL: "http://www.google.com",
-    userId: ""
+    userId: "",
+    shortURL: "9sm5xK"
   }
 };
 
@@ -34,6 +36,9 @@ app.use(cookieSession({
 //Account registration
 app.get("/register", (req, res) => {
   let id = req.session.user_id;
+  if (id && helper.checkDataInObject(id, 'id', users) === true) {
+    res.redirect('/urls');
+  }
   let templateVars = { user: '' };
   templateVars.user = users[id];
   res.render("urls_registration", templateVars);
@@ -41,34 +46,37 @@ app.get("/register", (req, res) => {
 
 
 app.post("/register", (req, res) => {
+  let templateVars = {};
+
   let userId = helper.generateRandomString(5);
 
   if (req.body.email === '' || req.body.password === '') {
     res.status(400);
-    res.send('Fill in your fields, ya doofus');
-  }
-  if (helper.checkDataInObject(req.body.email, 'email', users)) {
+    templateVars.error = 'Fill in your fields, ya doofus';
+    res.render('urls_error', templateVars);
+  } else if (helper.checkDataInObject(req.body.email, 'email', users)) {
     res.status(400);
-    res.send('Use another email, bud');
+    templateVars.error = 'Use another email, bud';
+    res.render('urls_error', templateVars);
+  } else {
+    users[userId] = {};
+    users[userId].id = userId;
+    users[userId].email = req.body.email;
+    const password = req.body.password;
+    const hashedPassword = bcrypt.hashSync(password, 10);
+    users[userId].password = hashedPassword;
+
+    //Add some sample url links upon registration
+    const userSampleUrlDatabase = sampleUrlDatabase;
+    for (let shortURL in userSampleUrlDatabase) {
+      userSampleUrlDatabase[shortURL].userId = userId;
+      urlDatabase[shortURL] = {};
+      urlDatabase[shortURL] = userSampleUrlDatabase[shortURL];
+    }
+
+    req.session.user_id = userId;//cookie userid assign
+    res.redirect('/urls');
   }
-  users[userId] = {};
-  users[userId].id = userId;
-  users[userId].email = req.body.email;
-  const password = req.body.password;
-  const hashedPassword = bcrypt.hashSync(password, 10);
-  users[userId].password = hashedPassword;
-
-  //Add some sample url links upon registration
-  const userSampleUrlDatabase = sampleUrlDatabase;
-  for (let shortURL in userSampleUrlDatabase) {
-    userSampleUrlDatabase[shortURL].userId = userId;
-    urlDatabase[shortURL] = {};
-    urlDatabase[shortURL] = userSampleUrlDatabase[shortURL];
-  }
-
-  req.session.user_id = userId;//cookie userid assign
-  res.redirect('/urls');
-
 });
 
 
@@ -82,6 +90,10 @@ app.post("/logout", (req, res) => {
 
 app.get("/login", (req, res) => {
   let id = req.session.user_id;
+  if (id && helper.checkDataInObject(id, 'id', users) === true) {
+    res.redirect('/urls');
+  }
+
   let templateVars = { user: '' };
   templateVars.user = users[id];
   res.render("urls_login", templateVars);
@@ -89,6 +101,7 @@ app.get("/login", (req, res) => {
 
 app.post("/login", (req, res) => {
   const { password, email } = req.body;
+  let templateVars = {};
 
   let userId = helper.getUserByEmail(email, users);
   let user = users[userId];
@@ -98,8 +111,10 @@ app.post("/login", (req, res) => {
     req.session.user_id = userId; //upon successful login, store userId as encrypted cookie
     res.redirect("/urls");
   } else {
+    templateVars.user = user.id;
+    templateVars.error = 'Wrong password/username';
     res.status(403);
-    res.send('Wrong password or username bud');
+    res.render('urls_error', templateVars);
   }
 });
 
@@ -107,31 +122,49 @@ app.post("/login", (req, res) => {
 app.post('/urls/:shortURL/delete', (req, res) => {
   let shortURL = req.params.shortURL;
   let userId = req.session.user_id;
-  if (userId === urlDatabase[shortURL].userId) {
-    delete urlDatabase[shortURL];
-    res.redirect(`/urls`);
+  let templateVars = {};
+  if (userId === undefined || helper.checkDataInObject(userId, 'id', users) === false) {
+    templateVars.error = 'Not logged in';
+    res.render('urls_error', templateVars);
+  }
+  if (urlDatabase[shortURL]) {
+
+    if (userId === urlDatabase[shortURL].userId) {
+      delete urlDatabase[shortURL];
+      res.redirect(`/urls`);
+    } else {
+      templateVars.error = 'Does not own URL';
+      res.render('urls_error', templateVars);
+    }
   } else {
-    res.send("you don't have permission to do this, friend");
+    templateVars.error = 'Does not own URL';
+    res.render("urls_error", templateVars);
   }
 });
 
-//go to edit page
-// app.post(`/urls/:shortURL/toedit`, (req, res) => {
-//   res.redirect(`/urls/${req.params.shortURL}`);
-// });
+
 
 //update the edited info
+
 app.post(`/urls/:shortURL/`, (req, res) => {
   let shortURL = req.params.shortURL;
   let id = req.session.user_id;
+  let templateVars = {};
   if (id === urlDatabase[shortURL].userId) {
     delete urlDatabase[shortURL];
     urlDatabase[shortURL] = {};
     urlDatabase[shortURL].longURL = req.body.longURL;
     urlDatabase[shortURL].userId = id;
+    urlDatabase[shortURL].shortURL = shortURL;
 
     res.redirect('/urls');
   }
+  if (id === undefined || helper.checkDataInObject(id, 'id', users) === false) {
+    templateVars.error = 'Not logged in';
+  } else if (urlDatabase[shortURL].userId !== id) {
+    templateVars.error = 'Does not own URL';
+  }
+  res.render('urls_error', templateVars);
 
 });
 
@@ -152,11 +185,15 @@ app.get("/urls/new", (req, res) => {
 
 //create a new shortURL for a input of longURL on urls/new
 app.post("/urls", (req, res) => {
-
+  let id = req.session.user_id;
+  if (id === undefined) {
+    res.send('Cannot create new urls without logging in');
+  }
   let short = helper.generateRandomString(6);
   urlDatabase[short] = {
     longURL: req.body.longURL,
-    userId: req.session.user_id
+    userId: req.session.user_id,
+    shortURL: short
   };
 
   res.redirect(`/urls/${short}`);
@@ -166,17 +203,15 @@ app.post("/urls", (req, res) => {
 //redirect to longURL from short URL
 app.get("/u/:shortURL", (req, res) => {
   let id = req.session.user_id;
-  let templateVars = {user: '' };
+  let templateVars = { user: '' };
   templateVars.user = users[id];
 
-  if (id === undefined) {
-    templateVars.user = undefined;
-  }
+
   if (urlDatabase[req.params.shortURL]) {
 
     res.redirect(urlDatabase[req.params.shortURL].longURL);
   } else {
-    res.render('urls_missing',templateVars);
+    res.render('urls_missing', templateVars);
   }
 
 });
@@ -191,6 +226,7 @@ app.get("/urls", (req, res) => {
   if (id === undefined) {
     templateVars.user = undefined;
   }
+
   res.render("urls_index", templateVars);
 });
 
@@ -201,25 +237,46 @@ app.get("/urls/:shortURL", (req, res) => {
   let allowedURLs = helper.urlsForUser(id, urlDatabase);
   let templateVars = {};
 
-  for (let shortURL in allowedURLs) {
-    if (shortUrlInput === shortURL) {
-      templateVars = { shortURL: shortUrlInput, longURL: urlDatabase[shortUrlInput].longURL, user: {} };
+  if (id === undefined) {
+    templateVars.error = 'Not logged in';
+    templateVars.user = undefined;
+    res.render("urls_show", templateVars);
+
+  } else if (helper.checkDataInObject(id, 'id', users) === false) {
+    templateVars.error = 'User does not exist';
+    templateVars.user = undefined;
+    res.render("urls_show", templateVars);
+  }
+
+  templateVars.user = users[id];
+
+  if (helper.checkDataInObject(shortUrlInput, 'shortURL', urlDatabase) === false) {
+    templateVars.error = 'URL does not exist';
+    res.render('urls_show', templateVars);
+  }
+  let check = false;
+  console.log(allowedURLs.b2xVn2.shortURL === shortUrlInput);
+  if (allowedURLs) {
+
+    for (let shortURL in allowedURLs) {
+      if (shortUrlInput === allowedURLs[shortURL].shortURL) {
+        templateVars.shortURL = shortUrlInput;
+        templateVars.longURL = urlDatabase[shortUrlInput].longURL;
+        templateVars.error = 'none';
+        res.render("urls_show", templateVars);
+
+      }
+
     }
 
   }
-  if (helper.checkDataInObject(id, 'id', users)) {
-    templateVars.user = users[id];
-  }
-  if (helper.checkDataInObject(id, 'id', users) === false) {
-    templateVars.user = undefined;
+
+  if (check === false) {
+    templateVars.shortURL = shortUrlInput;
+    templateVars.error = 'User does not own URL';
+    res.render('urls_show', templateVars);
   }
 
-  if (templateVars.shortURL === undefined) {
-    templateVars.shortURL = undefined;
-    templateVars.longURL = undefined;
-  }
-
-  res.render("urls_show", templateVars);
 });
 
 

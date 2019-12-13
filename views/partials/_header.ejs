@@ -4,9 +4,17 @@
   <nav class="navbar navbar-expand-md navbar-dark bg-success">
     <div class="credential">
 
-      <form method="POST" action="/logout">
-
+      
+        <form method="POST" action="/login">
+    
+          <% if(user === undefined) { %>
+          <a class="nav-item nav-link" href="/login" style="position:relative; left: 1500px">Login</a>
+          <a class="nav-item nav-link" href="/register" style="position:relative; left: 1500px">Register</a> >
+    
+          <% } %>
+        </form>
         <% if(user) { %>
+          <form method="POST" action="/logout">
 
         <label for="username" style=" position: relative; left:  1500px">Current User: <%= user.email %></label>
         <button type="submit" class="btn btn-primary" style="position:relative; left: 1500px">Logout</button>
@@ -14,14 +22,6 @@
       </form>
     </div>
     <div class="form-group mb-2">
-      <form method="POST" action="/login">
-
-        <% if(user === undefined) { %>
-        <a class="nav-item nav-link" href="/login" style="position:relative; left: 1500px">Login</a>
-        <a class="nav-item nav-link" href="/register" style="position:relative; left: 1500px">Register</a> >
-
-        <% } %>
-      </form>
     </div>
     <a class="navbar-brand" href="/urls">TinyApp</a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup"

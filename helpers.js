@@ -30,7 +30,8 @@ function urlsForUser(id, database) {
   for (let shortURL in database) {
     let currentURL = database[shortURL];
     if (currentURL.userId === id) {
-      output[shortURL] = { longURL: currentURL.longURL };
+      output[shortURL] = { longURL: currentURL.longURL, shortURL: shortURL };
+      
     }
   }
   return output;

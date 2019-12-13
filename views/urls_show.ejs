@@ -17,22 +17,29 @@
   <div class="card text-center">
     <div class="card-header"></div>
     <div class="card-body">
-      <% if (user === undefined) { %>
-        <p>You need to login to see urls</p>
+      <% if (error === 'Not logged in') { %>
+      <p>You need to login to see urls</p>
 
-      
-      <% } else if (longURL) { %>
+      <% } else if (error === 'User does not exist') { %>
+      <p>User does not exist</p>
+      <% } else if ( error === 'URL does not exist') { %>
+      <p>URL does not exist</p>
 
-        <h5 class="card-title">TinyURL for: <%= longURL %></h5>
-        <p class="card-text">Short URL: <a href="/u/<%= shortURL %>"><%= shortURL %></a></p>
-        <form method="POST" action="/urls/<%= shortURL %>">
-          <button id="edit" type="submit" class="btn btn-light" style = "position: relative; left: 150px; top: 40px">Update</button>
-          <input class="form-control" type="text" name="longURL" placeholder="http://" style="width: 300px; position: relative; left: 700px">
-        </form>  
-      <% } else { %> 
-      
-        <p> You can't see tiny urls you don't own!! bud </p>
+      <% } else if (error === 'User does not own URL') { %>
+      <p> You can't see tiny urls you don't own!! bud </p>
+      <% } else if (error === 'none') { %>
+
+      <h5 class="card-title">TinyURL for: <%= longURL %></h5>
+      <p class="card-text">Short URL: <a href="/u/<%= shortURL %>"><%= shortURL %></a></p>
+      <form method="POST" action="/urls/<%= shortURL %>">
+        <button id="edit" type="submit" class="btn btn-light"
+          style="position: relative; left: 150px; top: 40px">Update</button>
+        <input class="form-control" type="text" name="longURL" placeholder="http://"
+          style="width: 300px; position: relative; left: 700px">
+      </form>
       <% } %>
+
+      
     </div>
     <div class="card-footer text-muted"></div>
   </div>
